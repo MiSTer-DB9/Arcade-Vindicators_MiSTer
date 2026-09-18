@@ -1,0 +1,140 @@
+# Synthesis source list for the Vindicators core.
+# Game RTL is listed here and ONLY here.  Never add files from the Quartus GUI
+# (it rewrites Vindicators.qsf), and never put game logic in sys/ (that
+# directory is the untouched MiSTer framework).
+
+set_global_assignment -name SEARCH_PATH rtl/main
+set_global_assignment -name QIP_FILE sys/sys.qip
+
+# ---- clocking ----
+set_global_assignment -name QIP_FILE rtl/pll.qip
+
+# ---- video: sync generator, test pattern, analog alignment ----
+# SYNGEN raster (same Atari custom and 14.318181 MHz crystal as the Xybots
+# core, re-verified against SP-317 sheet 6).  The bring-up test pattern is only
+# instantiated under `ifdef VIND_BRINGUP_DEBUG.
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/vind_syngen.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/vind_testpat.sv
+# Analog-output alignment (CRT H-Size / H-Position, VGA H/V-Shift), outside the core
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/analog_hsize.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/vind_analog_adjust.sv
+
+# ---- video pipeline — SP-317 sheets 6, 7, 8, 9, 10, 11 ----
+# `vind_video` is the one module vind_core instantiates; every file below it
+# is one block of the schematic:
+#
+#   vind_vram        sheet 6  — the four LS253/LS257 VRAM address muxes, the
+#                               32 KB array, the CPU read latch / write buffer,
+#                               the 6F/11F slot pipeline (VAS, VCPU, NXLDL, 4H,
+#                               /GLD) and the 7L/7J MO link register
+#   vind_alpha       sheet 7  — the 14M/14L AP latch, the 11M control-word
+#                               decoder, the 18E VIRQ latch, the 15/16N
+#                               character ROM + 19N/18N shifters, the
+#                               19K/11L/13L PF vertical counter and the
+#                               19M/N+10L+10M MO X-scroll latch
+#   vind_pf          sheets 7, 8, 9 — the PFHS custom (137419-104), the
+#                               playfield word decode + 20N bank latch, the
+#                               graphics fetch and the PF half of SLAGS
+#   vind_mo_vmatch   sheet 8  — the 12N/13N/4N/14N/14J vertical-match adders
+#   vind_mo_fetch    sheet 8  — the PAL16R6A 7N slot sequencer (136059-1153,
+#                               used verbatim), the four MO word latches, the
+#                               82S147/82S129 tables and the 10N/9N/8N/7M
+#                               graphics-address chain
+#   vind_mo_linebuf  sheets 8, 10 — the two LB customs, the PAL16L8 17E
+#                               sequencer (136059-1152, verbatim), the 14F
+#                               bank strobes and the 18D/18F latches
+#   vind_mo          the sheet-8 top that ties those three together
+#   vind_gfx_hold    holds the last graphics word while an SDRAM fetch is late
+#   vind_prio_gpc    sheet 10 — the PAL16L8 17D (136059-1151, verbatim), the
+#                               13F/15F OR gates, the GPC custom (137419-101),
+#                               13J, the 12F pipeline, the 19M/N STAIN latch
+#                               and the 11-bit colour-RAM address
+#   vind_cram        sheet 10 — the 16K/18K 2048 x 8 colour RAM pair with
+#                               independent byte lanes
+#   vind_intensity_dac sheets 10, 11 — the 18M intensity adder, the 17M/17L
+#                               output registers cleared by /VIDBL and the
+#                               resistor-ladder transfer (DAC_MAME_COMPAT
+#                               switches to MAME's ztable)
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/vind_vram.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/vind_alpha.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/vind_pf.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/vind_mo_vmatch.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/vind_mo_fetch.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/vind_mo_linebuf.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/vind_mo.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/vind_gfx_hold.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/vind_prio_gpc.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/vind_cram.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/vind_intensity_dac.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/vind_video.sv
+
+# ---- memory path ----
+# The MiSTer ROM download and everything it fills: the index-0 stream router,
+# the SDRAM word packer, the MT48LC16M16-class controller, the three-client
+# arbiter, the 384 KB 68010 program ROM behind its prefetching line cache, the
+# PF/MO graphics row fetch, and the 16 KB 15/16N character ROM.  `vind_mem` is
+# the one module vind_core instantiates; the rest are its private children.
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/mem/vind_rom_loader.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/mem/vind_sdram_loader.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/mem/vind_sdram.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/mem/vind_sdram_arb.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/mem/vind_cpurom_sdram.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/mem/vind_gfx_mem.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/mem/vind_char_rom.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/mem/vind_mem.sv
+
+# ---- main board — SP-317 sheets 2, 3, 4 ----
+# The 68010 (5D), the PAL 3C / LS139 4J / LS138 7-8B decode, the 8D LS163A
+# DTACK sequencer, the IPL encoding, the 22M/N LS197 watchdog + the sheet-2
+# power-on one-shot, the 2804A EEPROM + its 18E unlock latch + MiSTer NVRAM,
+# the LS244/LS367A input ports and the 10B LS174 output latch, all tied
+# together by vind_main_bus.  The vendored TG68K (rtl/lib/TG68K/*.vhd, LGPL)
+# that vind_cpu instantiates in 68010 mode is listed with this block.
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/main/vind_cpu.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/main/vind_addr_decode.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/main/vind_dtack.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/main/vind_irq.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/main/vind_watchdog.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/main/vind_eeprom_2804.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/main/vind_nvram_io.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/main/vind_inputs.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/main/vind_out_latch.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/main/vind_main_bus.sv
+set_global_assignment -name VHDL_FILE rtl/lib/TG68K/TG68K_Pack.vhd
+set_global_assignment -name VHDL_FILE rtl/lib/TG68K/TG68K_ALU.vhd
+set_global_assignment -name VHDL_FILE rtl/lib/TG68K/TG68KdotC_Kernel.vhd
+set_global_assignment -name VHDL_FILE rtl/lib/TG68K/TG68K.vhd
+
+# ---- JSA I audio PCB (A043713) — SP-317 sheets 14-17 ----
+# The complete Stand-Alone Audio PCB: the 6502 (1J) on T65, the 2L/2M PAL +
+# 4M LS138 decode, the 2H 8Kx8 RAM + 2K 27512 with the A13B/A12B bank window,
+# the 5H /WRIO latch + 5J /RDIO port + the sheet-17 periodic IRQ divider, the
+# 3F /VOICE staging latch feeding the 5F /MIX latch, the YM2151 (2F, jt51) with
+# the YM3012 (2D), POKEY (3K) with its sheet-16 transimpedance output stage,
+# the 4066 analogue mixer with the CT1/CT2 stereo gates, the LM324 4A output
+# low-pass, and both halves of the SCOM link plus the four-wire JSCM/JSCOM
+# cable.  The three vendored cores this board instantiates (T65, POKEY, jt51)
+# are listed with this block.
+set_global_assignment -name VHDL_FILE rtl/lib/T65/T65_Pack.vhd
+set_global_assignment -name VHDL_FILE rtl/lib/T65/T65_MCode.vhd
+set_global_assignment -name VHDL_FILE rtl/lib/T65/T65_ALU.vhd
+set_global_assignment -name VHDL_FILE rtl/lib/T65/T65.vhd
+set_global_assignment -name VHDL_FILE rtl/lib/T65/T65_wrap.vhd
+set_global_assignment -name VHDL_FILE rtl/lib/POKEY/POKEY.vhd
+set_global_assignment -name QIP_FILE rtl/lib/jt51/hdl/jt51.qip
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/sound/vind_scom.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/sound/vind_jsa_decode.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/sound/vind_jsa_mem.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/sound/vind_jsa_io.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/sound/vind_jsa_bus.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/sound/vind_ym.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/sound/vind_pokey.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/sound/vind_pokey_out.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/sound/vind_jsa_mix.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/sound/vind_jsa_lpf.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/sound/vind_jsa.sv
+
+# ---- core + emu glue ----
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/vind_core.sv
+set_global_assignment -name SDC_FILE Vindicators.sdc
+set_global_assignment -name SYSTEMVERILOG_FILE Arcade-Vindicators.sv
