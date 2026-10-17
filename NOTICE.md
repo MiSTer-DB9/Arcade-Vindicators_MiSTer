@@ -11,7 +11,7 @@ repository. File headers are preserved in place.
 |---|---|---|---|
 | MiSTer framework (`sys_top`, `hps_io`, `arcade_video`, `video_freak`, `screen_rotate`, `ascal`, PLL config, …) | Till Harbaum, Alexey Melnikov (sorgelig), MiSTer-devel contributors | GPL-3.0-or-later | `sys/` |
 | Altera/Intel PLL megafunction instance | Intel Corporation (generated IP) | Intel FPGA IP licence, as generated | `rtl/pll*/` |
-| `analog_hsize.sv` — analog-VGA horizontal pixel-stretch line buffer | Umberto Parisi (rmonic79), Arcade-Raiden_MiSTer, via the Toobin'/Xybots cores | GPL-3.0-or-later | `rtl/video/analog_hsize.sv` |
+| `crt_adjust.sv` — CRT Adjust line buffer (H-Size / H-Position / V-Shift), MiSTer-CRT-Adjust upstream commit `c682de9`, with the four adaptations listed in its header | Umberto Parisi (rmonic79), <https://github.com/rmonic79/MiSTer-CRT-Adjust> | GPL-3.0-or-later | `rtl/video/crt_adjust.sv` |
 | TG68K 68000/68010/68020 soft CPU, used in **68010 mode** as the main CPU | Tobias Gubener. Carries the `cpu_cen` clock-enable modification from the Toobin' MiSTer core, plus two edits marked VINDICATORS in `TG68K.vhd`: the falling-edge bus process is delayed one clock (`cpu_cen_f`), and the E-clock / VPA synchroniser advances on `cpu_cen` so that autovectored interrupt cycles terminate correctly | LGPL-2.1-or-later | `rtl/lib/TG68K/` |
 | T65 6502 soft CPU + `T65_wrap`, the JSA I sound CPU (1J) | Daniel Wallner, Mike Johnson, Wolfgang Scherr, Morten Leikvoll | BSD-style (OpenCores) | `rtl/lib/T65/` |
 | jt51 YM2151 (OPM) FM core, the JSA I YM2151 (2F) + YM3012 (2D) | Jose Tejada (jotego) | GPL-3.0-or-later | `rtl/lib/jt51/` |
@@ -24,7 +24,8 @@ GPL-3.0-or-later, the same licence this repository ships under.
 
 | Vindicators file(s) | Derived from |
 |---|---|
-| `rtl/video/vind_syngen.sv`, `vind_testpat.sv`, `vind_analog_adjust.sv` | Xybots MiSTer core (this author's prior project), GPL-3.0; SYNGEN behaviour cross-checked with `Arcade-Gauntlet_MiSTer` `SYNGEN.vhd` by d18c7db |
+| `rtl/video/vind_syngen.sv`, `vind_testpat.sv` | Xybots MiSTer core (this author's prior project), GPL-3.0; SYNGEN behaviour cross-checked with `Arcade-Gauntlet_MiSTer` `SYNGEN.vhd` by d18c7db |
+| `rtl/video/vind_analog_adjust.sv` | MiSTer-CRT-Adjust `examples/core_side_snippet.v` (Umberto Parisi, GPL-3.0), by way of the Blasteroids MiSTer core's glue (this author's), GPL-3.0; re-derived for this raster and 8-clock pixel |
 | `rtl/vind_core.sv`, `Arcade-Vindicators.sv`, `Vindicators.sdc` | Xybots / Toobin' MiSTer cores, GPL-3.0 |
 | `rtl/main/vind_cpu.sv` | Toobin' `toobin_cpu.sv` (the TG68K 68010 wrapper, `cpu_cen` pacing and IPL synchroniser), GPL-3.0 |
 | `rtl/main/vind_main_bus.sv`, `vind_addr_decode.sv`, `vind_dtack.sv`, `vind_irq.sv`, `vind_watchdog.sv`, `vind_inputs.sv` | structure from the Xybots core's `xybots_main_bus.sv` / `xybots_addr_decode.sv` / `xybots_dtack.sv` / `xybots_irq.sv` / `xybots_watchdog.sv` / `xybots_inputs.sv`, GPL-3.0; every equation re-derived from SP-317 |

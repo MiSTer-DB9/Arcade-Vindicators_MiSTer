@@ -15,8 +15,11 @@ set_global_assignment -name QIP_FILE rtl/pll.qip
 # instantiated under `ifdef VIND_BRINGUP_DEBUG.
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/vind_syngen.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/vind_testpat.sv
-# Analog-output alignment (CRT H-Size / H-Position, VGA H/V-Shift), outside the core
-set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/analog_hsize.sv
+# Analog-output alignment (CRT Adjust: H-Size / H-Position / V-Shift), outside
+# the core.  crt_adjust.sv is rmonic79's MiSTer-CRT-Adjust engine (c682de9,
+# GPL-3.0-or-later, (c) Umberto Parisi), vendored with the family's four
+# adaptations listed in its header.
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/crt_adjust.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/video/vind_analog_adjust.sv
 
 # ---- video pipeline — SP-317 sheets 6, 7, 8, 9, 10, 11 ----

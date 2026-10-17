@@ -52,7 +52,7 @@ set_global_assignment -name ECO_OPTIMIZE_TIMING ON
 set_global_assignment -name PERIPHERY_TO_CORE_PLACEMENT_AND_ROUTING_OPTIMIZATION ON
 set_global_assignment -name PHYSICAL_SYNTHESIS_ASYNCHRONOUS_SIGNAL_PIPELINING ON
 set_global_assignment -name ALM_REGISTER_PACKING_EFFORT MEDIUM
-set_global_assignment -name SEED 3
+set_global_assignment -name SEED 2
 
 # Framework feature macros (see sys/sys_top.v for the full list).
 # MISTER_FB enables the DDR3 framebuffer path used by video_freak/ascal.
