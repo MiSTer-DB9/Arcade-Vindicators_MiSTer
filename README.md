@@ -122,20 +122,28 @@ and the game writes its own defaults on first boot.
 | Aspect ratio | Original / Full Screen / two user ratios |
 | Orientation | Original / Flip |
 | Scale | Normal / V-Integer / HV-Integer / Narrower HV-Integer |
-| **Analog alignment** (page) | CRT H-Size, CRT H-Position, Analog VGA H-Shift, Analog VGA V-Shift |
+| **CRT Adjust** (page) | CRT Adjust Off/On, then CRT H-Size, CRT H-Position, CRT V-Shift (shown while On) |
 | Service | the cabinet self-test switch (also the JSA board's SW1 — one switch, both boards, as on the real cabinet) |
 | Reset | core reset |
 
-The analog alignment page is the same one as in the
-[Arcade-Toobin_MiSTer](https://github.com/MiSTer-devel/Arcade-Toobin_MiSTer),
-[Arcade-Klax_MiSTer](https://github.com/MiSTer-devel/Arcade-Klax_MiSTer) and
-[Arcade-Xybots_MiSTer](https://github.com/MiSTer-devel/Arcade-Xybots_MiSTer)
-cores, for centring and sizing the picture on an analog CRT. It acts on the
-output side only (`rtl/video/vind_analog_adjust.sv`): the native 456 × 263
-raster, the 7.159 MHz dot clock and the 59.696 Hz refresh are untouched, and at
-the zero settings the stage is a bit-exact bypass, so the default picture is
-the one that was compared against MAME and checked on hardware. None of it
-touches core timing.
+The CRT Adjust page is rmonic79's
+[MiSTer-CRT-Adjust](https://github.com/rmonic79/MiSTer-CRT-Adjust) engine, for
+centring and sizing the picture on an analog CRT: H-Size stretches or squeezes
+the line in 1/64 steps, H-Position slides the picture inside an untouched
+HSync, and V-Shift moves VSync by whole lines. It acts on the output side only
+(`rtl/video/vind_analog_adjust.sv`): the native 456 × 263 raster, the
+7.159 MHz dot clock and the 59.696 Hz refresh are untouched. It is Off by
+default, and Off is a bit-exact bypass, so the default picture is the one that
+was compared against MAME and checked on hardware; the stage also turns itself
+off whenever the framework forces the scandoubler. While On, all 240 lines
+reach the display, the top and bottom rows included. None of it touches core
+timing.
+
+H-Position is a content shift. The picture has a 32-pixel margin on its right
+inside the line: H-Position up to +31, and H-Size up to +4 at H-Position 0,
+show the whole picture. Further right, or larger without a negative
+H-Position, runs the right edge off the line; a negative H-Position buys the
+room back.
 
 ## Hardware baseline
 
@@ -168,14 +176,15 @@ Resource use on the DE10-Nano's Cyclone V (`5CSEBA6U23I7`), for the bitstream in
 17.0.2 with multi-corner analysis on: **every slack entry positive, TNS 0.000
 on every clock and every check** (setup, hold, recovery, removal) across all
 144 analysed corner/check combinations. The game logic has margin (`clk_sys`
-setup +2.01 ns; the SDRAM pins +8.3 ns setup and +2.0 ns hold, with every SDRAM
+setup +2.02 ns; the SDRAM pins +8.3 ns setup and +2.0 ns hold, with every SDRAM
 address, command and data register in an I/O cell so that timing does not move
-between builds); the tightest path in the design is in the MiSTer framework's
-HDMI scaler on the HDMI PLL clock, at +0.115 ns. That path is
-placement-sensitive, which is why `Vindicators.qsf` pins the fitter seed;
-re-check timing if you change it. On this netlist Quartus 17.0.2's fitter
-crashes with an access violation during physical synthesis for seeds 1 and 2;
-seed 3, the one pinned, completes.
+between builds); the tightest paths in the design are in the MiSTer framework's
+HDMI scaler on the HDMI PLL clock, at +0.41 ns setup and +0.07 ns hold. Those
+paths are placement-sensitive, which is why `Vindicators.qsf` pins the fitter
+seed; re-check timing if you change it. On this netlist Quartus 17.0.2's fitter
+crashes with an access violation during physical synthesis for seed 3; seeds
+1, 2 and 4 complete with every entry positive, and seed 2, the one pinned, has
+the most margin.
 
 ## Accuracy and verification
 
@@ -373,14 +382,14 @@ preserved; `NOTICE.md` is the authoritative list.
 | T65 (6502, the JSA I sound CPU) | Daniel Wallner, with fixes by Mike Johnson, Wolfgang Scherr and Morten Leikvoll (OpenCores / FPGAArcade) | BSD-style |
 | POKEY | Mike Johnson (MikeJ, FPGAArcade) | BSD-style |
 | jt51 (YM2151) | Jose Tejada (jotego), <https://github.com/jotego/jt51> | GPL-3.0-or-later |
-| analog_hsize (CRT H-Size / H-Position resampler) | Umberto Parisi (rmonic79), Arcade-Raiden_MiSTer | GPL-3.0-or-later |
+| crt_adjust (CRT Adjust: H-Size / H-Position / V-Shift line buffer), MiSTer-CRT-Adjust `c682de9` | Umberto Parisi (rmonic79), <https://github.com/rmonic79/MiSTer-CRT-Adjust> | GPL-3.0-or-later |
 | Altera/Intel PLL megafunction | Intel Corporation (generated IP) | Intel FPGA IP licence, as generated |
 
 The TG68K 68010 wrapper, the SDRAM path, the JSA I building blocks and the
 verification methodology come from the
 [Arcade-Toobin_MiSTer](https://github.com/MiSTer-devel/Arcade-Toobin_MiSTer)
 core, which uses the same 68010 and the same audio board. The SYNGEN raster,
-the analog alignment page, the MiSTer glue and the test harness come from this
+the MiSTer glue and the test harness come from this
 author's [Arcade-Xybots_MiSTer](https://github.com/MiSTer-devel/Arcade-Xybots_MiSTer)
 core. The SYNGEN, PFHS, GPC and line-buffer customs were cross-checked against
 d18c7db's [Arcade-Gauntlet_MiSTer](https://github.com/MiSTer-devel/Arcade-Gauntlet_MiSTer),
